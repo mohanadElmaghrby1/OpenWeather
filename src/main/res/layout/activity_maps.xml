@@ -39,7 +39,8 @@
         android:layout_marginBottom="16dp"
         android:background="@drawable/button_press"
         android:text="submit"
-        android:textColor="@color/white" />
+        android:onClick="submitLocation"
+        android:textColor="@color/colorPrimary" />
 
 
 </FrameLayout>

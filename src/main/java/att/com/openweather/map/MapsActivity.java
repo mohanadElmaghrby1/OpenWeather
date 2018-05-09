@@ -2,13 +2,18 @@ package att.com.openweather.map;
 
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.AlertDialog;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
@@ -33,7 +38,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
     private static String TAG = "Maps Activity";
     private int PLACE_AUTOCOMPLETE_REQUEST_CODE = 1;
-//    private TextView place_autocomplete_fragment;
+    LatLng newLocation = null;
+    private static int MAP_REQUEST_CODE=10;
+    private String location ="";
+
+
 
 
     @Override
@@ -45,17 +54,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-//        place_autocomplete_fragment = (TextView)findViewById(R.id.place_autocomplete_fragment);
+
 
         /*google places auto complete */
         PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
                 getFragmentManager().findFragmentById(R.id.place_autocomplete_fragment);
+
 
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(Place place) {
                 // TODO: Get info about the selected place.
                 Log.i(TAG, "Place: " + place.getName());
+                newLocation = place.getLatLng();
+
                 Toast.makeText(getApplicationContext(), "Place: " + place.getName(), Toast.LENGTH_SHORT).show();
                 addMarker(place);
             }
@@ -108,6 +120,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
+            ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             return;
         }
 
@@ -157,7 +170,47 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapLongClick(LatLng latLng) {
+        mMap.clear();
         mMap.addMarker(new MarkerOptions().position(latLng));
+        newLocation = latLng;
+        showInputDialog();
 
+    }
+
+    public void submitLocation(View view) {
+        if (newLocation != null){
+            Intent intent = new Intent();
+            intent.putExtra("newlocation" , newLocation);
+            intent.putExtra("locationname",location);
+            setResult(Activity.RESULT_OK,intent );
+            finish();
+        } else{
+            Toast.makeText(getApplicationContext() , "Please select location before submitting !", Toast.LENGTH_LONG).show();
+        }
+    }
+
+
+    private void showInputDialog(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("name the location please ");
+
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                location = input.getText().toString();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+                mMap.clear();
+            }
+        });
+
+        builder.show();
     }
 }
