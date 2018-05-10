@@ -8,6 +8,12 @@ public class WeatherUtils {
 
     private static String LOG_TAG= WeatherUtils.class.getName().toString();
 
+    /**
+     * every weather has id which declear  weather status (cloud or clair)
+     * and every status has icon represent
+     * @param weatherId
+     * @return
+     */
     public static int getSmallArtResourceIdForWeatherCondition(int weatherId) {
 
         /*

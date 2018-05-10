@@ -1,34 +1,44 @@
 package att.com.openweather;
 
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.os.Parcelable;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import att.com.openweather.database.WeatherDbHelper;
 import att.com.openweather.forcast.WeatherAdapter;
 import att.com.openweather.map.MapsActivity;
 import att.com.openweather.model.Weather;
 import att.com.openweather.networkController.RequestCallBack;
 import att.com.openweather.networkController.Service;
 import att.com.openweather.utils.JsonParsing;
+import att.com.openweather.utils.SyncWeatherData;
 
-public class ForcastActivity extends AppCompatActivity {
+public class ForcastActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
+    private static final int TASK_LOADER_ID = 2;
     private static int MAP_REQUEST_CODE=10;
     private ProgressBar mLoadingIndicator;
-    WeatherAdapter adapter;
-    RecyclerView mRecyclerView;
-    private Parcelable mListState;
-
-    RecyclerView.LayoutManager mLayoutManger;
-    private String LIST_STATE_KEY = "listkey";
+    private WeatherAdapter adapter;
+    private TextView emptyView;
+    private RecyclerView mRecyclerView;
+    private SyncWeatherData syncWeatherData ;
+    private RecyclerView.LayoutManager mLayoutManger;
+    private WeatherDbHelper weatherDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,44 +48,35 @@ public class ForcastActivity extends AppCompatActivity {
         mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
 
         mRecyclerView = (RecyclerView)findViewById(R.id.recyclerview_forecast);
-        adapter = new WeatherAdapter(this, null);
+        emptyView = (TextView)findViewById(R.id.empty_view);
+        adapter = new WeatherAdapter(this);
+
         mRecyclerView.setAdapter(adapter);
         mRecyclerView.setHasFixedSize(true);
 
         mLayoutManger=new LinearLayoutManager(this);
 
-        if (savedInstanceState!=null){
-            mListState = savedInstanceState.getParcelable(LIST_STATE_KEY);
-            mLayoutManger.onRestoreInstanceState(mListState);
-        }
+
         mRecyclerView.setLayoutManager(mLayoutManger);
-    }
+        weatherDbHelper=new WeatherDbHelper(this);
+
+        /*sync weather data*/
+        syncWeatherData=new SyncWeatherData();
+        syncWeatherData.syncWeather(this , getSupportLoaderManager());
+
+        this.getSupportLoaderManager().initLoader(TASK_LOADER_ID, null, this);
 
 
-    @Override
-    public void onSaveInstanceState(Bundle state) {
-        super.onSaveInstanceState(state);
-        // Save list state
-        mListState = mLayoutManger.onSaveInstanceState();
-        state.putParcelable(LIST_STATE_KEY, mListState);
-    }
-
-    protected void onRestoreInstanceState(Bundle state) {
-        super.onRestoreInstanceState(state);
-
-        // Retrieve list state and list/item positions
-        if(state != null) {
-            mListState = state.getParcelable(LIST_STATE_KEY);
-            adapter.notifyDataSetChanged();
-        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (mListState != null) {
-            mLayoutManger.onRestoreInstanceState(mListState);
-        }
+        restartLoader();
+    }
+
+    public void restartLoader(){
+        this.getSupportLoaderManager().restartLoader(TASK_LOADER_ID, null, this);
 
     }
 
@@ -89,33 +90,33 @@ public class ForcastActivity extends AppCompatActivity {
         if (requestCode == MAP_REQUEST_CODE && resultCode==RESULT_OK){
             LatLng newLocation = (LatLng) data.getExtras().get("newlocation");
             String locationName = data.getStringExtra("locationname");
-
-
             loadWeatherData(newLocation , locationName);
 
         }
     }
 
+    /**
+     * load and insert weather data for specific location
+     * @param latLng
+     * @param locationName
+     */
     private void loadWeatherData(LatLng latLng , final String locationName){
 
-        //show loading
         showLoading();
-
         Service.getWeatherInfo(this, latLng.longitude, latLng.latitude, new RequestCallBack() {
             @Override
             public void success(String response) {
                 Weather weather = JsonParsing.getWeather(response);
+                //insert to data base
                 weather.setCityName(locationName);
-                adapter.setDataChange(weather);
+                weatherDbHelper.insert(weather);
                 //hide loading
-                showWeatherDataView();
+                restartLoader();
             }
 
             @Override
             public void error(Exception exc) {
-                Toast.makeText(getApplicationContext() , "error loadin data" , Toast.LENGTH_SHORT).show();
-                //hide loading
-                showWeatherDataView();
+                Toast.makeText(getApplicationContext() , "error loading data" , Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -140,4 +141,59 @@ public class ForcastActivity extends AppCompatActivity {
         /* Finally, show the loading indicator */
         mLoadingIndicator.setVisibility(View.VISIBLE);
     }
+
+
+    @NonNull
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
+        showLoading();
+        return new AsyncTaskLoader<Cursor>(this) {
+
+            Cursor mWeatherData = null;
+            @Override
+            protected void onStartLoading() {
+                if (mWeatherData != null) {
+                    deliverResult(mWeatherData);
+                } else {
+                    forceLoad();
+                }
+            }
+
+            @Override
+            public Cursor loadInBackground() {
+                try {
+                    return weatherDbHelper.slectAll();
+
+                } catch (Exception e) {
+                    Log.e(this.getClass().getName(), "Failed to asynchronously load data.");
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+            public void deliverResult(Cursor data) {
+                mWeatherData = data;
+                super.deliverResult(data);
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, final Cursor cursor) {
+        adapter.swapCursor(cursor);
+        if (cursor==null || cursor.getCount()==0 ){
+            mRecyclerView.setVisibility(View.INVISIBLE);
+            emptyView.setVisibility(View.VISIBLE);
+        }else{
+            mRecyclerView.setVisibility(View.VISIBLE);
+            emptyView.setVisibility(View.INVISIBLE);
+        }
+        showWeatherDataView();
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+
+    }
+
+
 }

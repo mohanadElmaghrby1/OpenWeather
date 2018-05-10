@@ -3,7 +3,7 @@ package att.com.openweather.networkController;
 import android.content.Context;
 
 /**
- * Created by mohanad on 31/07/17.
+ * class contain services for api connection
  */
 
 public class Service {

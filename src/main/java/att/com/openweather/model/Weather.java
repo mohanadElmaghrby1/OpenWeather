@@ -1,7 +1,7 @@
 package att.com.openweather.model;
 
 /**
- * model class for returned weather data
+ * model class for  weather object
  */
 public class Weather {
 

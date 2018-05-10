@@ -2,6 +2,9 @@ package att.com.openweather.database;
 
 import android.provider.BaseColumns;
 
+/**
+ * contract class for weather data base schema 
+ */
 public class WeatherEntry implements BaseColumns {
 
     /*table name*/

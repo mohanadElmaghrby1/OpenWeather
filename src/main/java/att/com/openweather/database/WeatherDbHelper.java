@@ -18,7 +18,7 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
     public static final String DATABASE_NAME = "weather.db";
 
     /*data base version*/
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 3;
 
     public WeatherDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -55,20 +55,19 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
         contentValues.put(WeatherEntry.COLUMN_WEATHER_ID, weather.getWeatherId());
         contentValues.put(WeatherEntry.COLUMN_WEATHER_STATE, weather.getWeatherState());
         contentValues.put(WeatherEntry.COLUMN_CITY_NAME, weather.getCityName());
-
-
         contentValues.put(WeatherEntry.COLUMN_LON, weather.getLon());
         contentValues.put(WeatherEntry.COLUMN_LAT, weather.getLat());
         contentValues.put(WeatherEntry.COLUMN_MIN_TEMP, weather.getTempMin());
         contentValues.put(WeatherEntry.COLUMN_MAX_TEMP, weather.getTempMax());
 
-        return db.insert(WeatherEntry.TABLE_NAME, null, contentValues);
+        long ans= db.insert(WeatherEntry.TABLE_NAME, null, contentValues);
+        return  ans;
     }
 
 
-    public Cursor query() {
+    public Cursor slectAll() {
         // Get access to underlying database (read-only for query)
-        final SQLiteDatabase db = this.getReadableDatabase();
+        SQLiteDatabase db = this.getReadableDatabase();
 
         Cursor retCursor;
 

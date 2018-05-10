@@ -6,10 +6,10 @@
     android:background="@drawable/touch_selector"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="?android:attr/listPreferredItemHeight"
+    android:layout_marginBottom="1dp"
+    android:minHeight="?android:attr/listPreferredItemHeightLarge"
     android:paddingBottom="@dimen/list_item_padding_vertical"
     android:paddingLeft="@dimen/list_item_padding_horizontal"
-    android:paddingRight="@dimen/list_item_padding_horizontal"
     android:paddingTop="@dimen/list_item_padding_vertical">
 
     <ImageView
@@ -60,13 +60,15 @@
         android:id="@+id/low_temperature"
         android:layout_width="60dp"
         android:layout_height="wrap_content"
+        android:layout_marginRight="44dp"
         android:fontFamily="sans-serif-light"
         android:gravity="end"
         android:textSize="@dimen/forecast_text_size"
         app:layout_constraintBottom_toBottomOf="@+id/guideline"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="@+id/guideline"
-        tools:text="10\u00b0"/>
+        app:layout_constraintVertical_bias="0.513"
+        tools:text="10\u00b0" />
 
     <android.support.constraint.Guideline
         android:id="@+id/guideline"
@@ -74,5 +76,20 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         app:layout_constraintGuide_percent="0.5"/>
+
+    <TextView
+        android:id="@+id/btn_menu"
+        android:layout_width="30dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:gravity="center"
+        android:text="&#8942;"
+        android:padding="8dp"
+        android:textAppearance="?android:textAppearanceLarge"
+        app:layout_constraintBottom_toBottomOf="@+id/guideline"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/guideline"
+        app:layout_constraintVertical_bias="0.688" />
 
 </android.support.constraint.ConstraintLayout>

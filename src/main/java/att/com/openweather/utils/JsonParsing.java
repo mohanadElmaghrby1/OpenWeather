@@ -5,6 +5,9 @@ import org.json.JSONObject;
 
 import att.com.openweather.model.Weather;
 
+/**
+ * help parsing json to weather object
+ */
 public class JsonParsing {
 
     /**
